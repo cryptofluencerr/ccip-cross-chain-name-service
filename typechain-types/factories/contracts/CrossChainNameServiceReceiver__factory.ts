@@ -2,15 +2,19 @@
 /* tslint:disable */
 /* eslint-disable */
 import {
-  Signer,
-  utils,
   Contract,
   ContractFactory,
-  BigNumberish,
-  Overrides,
+  ContractTransactionResponse,
+  Interface,
 } from "ethers";
-import type { Provider, TransactionRequest } from "@ethersproject/providers";
-import type { PromiseOrValue } from "../../common";
+import type {
+  Signer,
+  BigNumberish,
+  AddressLike,
+  ContractDeployTransaction,
+  ContractRunner,
+} from "ethers";
+import type { NonPayableOverrides } from "../../common";
 import type {
   CrossChainNameServiceReceiver,
   CrossChainNameServiceReceiverInterface,
@@ -205,25 +209,12 @@ export class CrossChainNameServiceReceiver__factory extends ContractFactory {
     }
   }
 
-  override deploy(
-    router: PromiseOrValue<string>,
-    lookup: PromiseOrValue<string>,
-    sourceChainSelector: PromiseOrValue<BigNumberish>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<CrossChainNameServiceReceiver> {
-    return super.deploy(
-      router,
-      lookup,
-      sourceChainSelector,
-      overrides || {}
-    ) as Promise<CrossChainNameServiceReceiver>;
-  }
   override getDeployTransaction(
-    router: PromiseOrValue<string>,
-    lookup: PromiseOrValue<string>,
-    sourceChainSelector: PromiseOrValue<BigNumberish>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): TransactionRequest {
+    router: AddressLike,
+    lookup: AddressLike,
+    sourceChainSelector: BigNumberish,
+    overrides?: NonPayableOverrides & { from?: string }
+  ): Promise<ContractDeployTransaction> {
     return super.getDeployTransaction(
       router,
       lookup,
@@ -231,26 +222,42 @@ export class CrossChainNameServiceReceiver__factory extends ContractFactory {
       overrides || {}
     );
   }
-  override attach(address: string): CrossChainNameServiceReceiver {
-    return super.attach(address) as CrossChainNameServiceReceiver;
+  override deploy(
+    router: AddressLike,
+    lookup: AddressLike,
+    sourceChainSelector: BigNumberish,
+    overrides?: NonPayableOverrides & { from?: string }
+  ) {
+    return super.deploy(
+      router,
+      lookup,
+      sourceChainSelector,
+      overrides || {}
+    ) as Promise<
+      CrossChainNameServiceReceiver & {
+        deploymentTransaction(): ContractTransactionResponse;
+      }
+    >;
   }
-  override connect(signer: Signer): CrossChainNameServiceReceiver__factory {
-    return super.connect(signer) as CrossChainNameServiceReceiver__factory;
+  override connect(
+    runner: ContractRunner | null
+  ): CrossChainNameServiceReceiver__factory {
+    return super.connect(runner) as CrossChainNameServiceReceiver__factory;
   }
 
   static readonly bytecode = _bytecode;
   static readonly abi = _abi;
   static createInterface(): CrossChainNameServiceReceiverInterface {
-    return new utils.Interface(_abi) as CrossChainNameServiceReceiverInterface;
+    return new Interface(_abi) as CrossChainNameServiceReceiverInterface;
   }
   static connect(
     address: string,
-    signerOrProvider: Signer | Provider
+    runner?: ContractRunner | null
   ): CrossChainNameServiceReceiver {
     return new Contract(
       address,
       _abi,
-      signerOrProvider
-    ) as CrossChainNameServiceReceiver;
+      runner
+    ) as unknown as CrossChainNameServiceReceiver;
   }
 }

@@ -3,46 +3,29 @@
 /* eslint-disable */
 import type {
   BaseContract,
-  BigNumber,
   BigNumberish,
   BytesLike,
-  CallOverrides,
-  ContractTransaction,
-  Overrides,
-  PopulatedTransaction,
-  Signer,
-  utils,
-} from "ethers";
-import type {
   FunctionFragment,
   Result,
+  Interface,
   EventFragment,
-} from "@ethersproject/abi";
-import type { Listener, Provider } from "@ethersproject/providers";
+  AddressLike,
+  ContractRunner,
+  ContractMethod,
+  Listener,
+} from "ethers";
 import type {
-  TypedEventFilter,
-  TypedEvent,
+  TypedContractEvent,
+  TypedDeferredTopicFilter,
+  TypedEventLog,
+  TypedLogDescription,
   TypedListener,
-  OnEvent,
-  PromiseOrValue,
+  TypedContractMethod,
 } from "../common";
 
-export interface CrossChainNameServiceRegisterInterface
-  extends utils.Interface {
-  functions: {
-    "acceptOwnership()": FunctionFragment;
-    "enableChain(uint64,address,uint256)": FunctionFragment;
-    "i_lookup()": FunctionFragment;
-    "i_router()": FunctionFragment;
-    "owner()": FunctionFragment;
-    "register(string)": FunctionFragment;
-    "s_chains(uint256)": FunctionFragment;
-    "transferOwnership(address)": FunctionFragment;
-    "withdraw(address)": FunctionFragment;
-  };
-
+export interface CrossChainNameServiceRegisterInterface extends Interface {
   getFunction(
-    nameOrSignatureOrTopic:
+    nameOrSignature:
       | "acceptOwnership"
       | "enableChain"
       | "i_lookup"
@@ -54,36 +37,35 @@ export interface CrossChainNameServiceRegisterInterface
       | "withdraw"
   ): FunctionFragment;
 
+  getEvent(
+    nameOrSignatureOrTopic:
+      | "OwnershipTransferRequested"
+      | "OwnershipTransferred"
+  ): EventFragment;
+
   encodeFunctionData(
     functionFragment: "acceptOwnership",
     values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "enableChain",
-    values: [
-      PromiseOrValue<BigNumberish>,
-      PromiseOrValue<string>,
-      PromiseOrValue<BigNumberish>
-    ]
+    values: [BigNumberish, AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "i_lookup", values?: undefined): string;
   encodeFunctionData(functionFragment: "i_router", values?: undefined): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "register",
-    values: [PromiseOrValue<string>]
-  ): string;
+  encodeFunctionData(functionFragment: "register", values: [string]): string;
   encodeFunctionData(
     functionFragment: "s_chains",
-    values: [PromiseOrValue<BigNumberish>]
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "transferOwnership",
-    values: [PromiseOrValue<string>]
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "withdraw",
-    values: [PromiseOrValue<string>]
+    values: [AddressLike]
   ): string;
 
   decodeFunctionResult(
@@ -104,292 +86,207 @@ export interface CrossChainNameServiceRegisterInterface
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
-
-  events: {
-    "OwnershipTransferRequested(address,address)": EventFragment;
-    "OwnershipTransferred(address,address)": EventFragment;
-  };
-
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferRequested"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
 }
 
-export interface OwnershipTransferRequestedEventObject {
-  from: string;
-  to: string;
+export namespace OwnershipTransferRequestedEvent {
+  export type InputTuple = [from: AddressLike, to: AddressLike];
+  export type OutputTuple = [from: string, to: string];
+  export interface OutputObject {
+    from: string;
+    to: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
-export type OwnershipTransferRequestedEvent = TypedEvent<
-  [string, string],
-  OwnershipTransferRequestedEventObject
->;
 
-export type OwnershipTransferRequestedEventFilter =
-  TypedEventFilter<OwnershipTransferRequestedEvent>;
-
-export interface OwnershipTransferredEventObject {
-  from: string;
-  to: string;
+export namespace OwnershipTransferredEvent {
+  export type InputTuple = [from: AddressLike, to: AddressLike];
+  export type OutputTuple = [from: string, to: string];
+  export interface OutputObject {
+    from: string;
+    to: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
-export type OwnershipTransferredEvent = TypedEvent<
-  [string, string],
-  OwnershipTransferredEventObject
->;
-
-export type OwnershipTransferredEventFilter =
-  TypedEventFilter<OwnershipTransferredEvent>;
 
 export interface CrossChainNameServiceRegister extends BaseContract {
-  connect(signerOrProvider: Signer | Provider | string): this;
-  attach(addressOrName: string): this;
-  deployed(): Promise<this>;
+  connect(runner?: ContractRunner | null): CrossChainNameServiceRegister;
+  waitForDeployment(): Promise<this>;
 
   interface: CrossChainNameServiceRegisterInterface;
 
-  queryFilter<TEvent extends TypedEvent>(
-    event: TypedEventFilter<TEvent>,
+  queryFilter<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
     fromBlockOrBlockhash?: string | number | undefined,
     toBlock?: string | number | undefined
-  ): Promise<Array<TEvent>>;
+  ): Promise<Array<TypedEventLog<TCEvent>>>;
+  queryFilter<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    fromBlockOrBlockhash?: string | number | undefined,
+    toBlock?: string | number | undefined
+  ): Promise<Array<TypedEventLog<TCEvent>>>;
 
-  listeners<TEvent extends TypedEvent>(
-    eventFilter?: TypedEventFilter<TEvent>
-  ): Array<TypedListener<TEvent>>;
-  listeners(eventName?: string): Array<Listener>;
-  removeAllListeners<TEvent extends TypedEvent>(
-    eventFilter: TypedEventFilter<TEvent>
-  ): this;
-  removeAllListeners(eventName?: string): this;
-  off: OnEvent<this>;
-  on: OnEvent<this>;
-  once: OnEvent<this>;
-  removeListener: OnEvent<this>;
+  on<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
+  on<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
 
-  functions: {
-    acceptOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
+  once<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
+  once<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
 
-    enableChain(
-      chainSelector: PromiseOrValue<BigNumberish>,
-      ccnsReceiverAddress: PromiseOrValue<string>,
-      gasLimit: PromiseOrValue<BigNumberish>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
+  listeners<TCEvent extends TypedContractEvent>(
+    event: TCEvent
+  ): Promise<Array<TypedListener<TCEvent>>>;
+  listeners(eventName?: string): Promise<Array<Listener>>;
+  removeAllListeners<TCEvent extends TypedContractEvent>(
+    event?: TCEvent
+  ): Promise<this>;
 
-    i_lookup(overrides?: CallOverrides): Promise<[string]>;
+  acceptOwnership: TypedContractMethod<[], [void], "nonpayable">;
 
-    i_router(overrides?: CallOverrides): Promise<[string]>;
-
-    owner(overrides?: CallOverrides): Promise<[string]>;
-
-    register(
-      _name: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-
-    s_chains(
-      arg0: PromiseOrValue<BigNumberish>,
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, string, BigNumber] & {
-        chainSelector: BigNumber;
-        ccnsReceiverAddress: string;
-        gasLimit: BigNumber;
-      }
-    >;
-
-    transferOwnership(
-      to: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-
-    withdraw(
-      beneficiary: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
-  };
-
-  acceptOwnership(
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
-
-  enableChain(
-    chainSelector: PromiseOrValue<BigNumberish>,
-    ccnsReceiverAddress: PromiseOrValue<string>,
-    gasLimit: PromiseOrValue<BigNumberish>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
-
-  i_lookup(overrides?: CallOverrides): Promise<string>;
-
-  i_router(overrides?: CallOverrides): Promise<string>;
-
-  owner(overrides?: CallOverrides): Promise<string>;
-
-  register(
-    _name: PromiseOrValue<string>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
-
-  s_chains(
-    arg0: PromiseOrValue<BigNumberish>,
-    overrides?: CallOverrides
-  ): Promise<
-    [BigNumber, string, BigNumber] & {
-      chainSelector: BigNumber;
-      ccnsReceiverAddress: string;
-      gasLimit: BigNumber;
-    }
+  enableChain: TypedContractMethod<
+    [
+      chainSelector: BigNumberish,
+      ccnsReceiverAddress: AddressLike,
+      gasLimit: BigNumberish
+    ],
+    [void],
+    "nonpayable"
   >;
 
-  transferOwnership(
-    to: PromiseOrValue<string>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
+  i_lookup: TypedContractMethod<[], [string], "view">;
 
-  withdraw(
-    beneficiary: PromiseOrValue<string>,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
+  i_router: TypedContractMethod<[], [string], "view">;
 
-  callStatic: {
-    acceptOwnership(overrides?: CallOverrides): Promise<void>;
+  owner: TypedContractMethod<[], [string], "view">;
 
-    enableChain(
-      chainSelector: PromiseOrValue<BigNumberish>,
-      ccnsReceiverAddress: PromiseOrValue<string>,
-      gasLimit: PromiseOrValue<BigNumberish>,
-      overrides?: CallOverrides
-    ): Promise<void>;
+  register: TypedContractMethod<[_name: string], [void], "nonpayable">;
 
-    i_lookup(overrides?: CallOverrides): Promise<string>;
-
-    i_router(overrides?: CallOverrides): Promise<string>;
-
-    owner(overrides?: CallOverrides): Promise<string>;
-
-    register(
-      _name: PromiseOrValue<string>,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    s_chains(
-      arg0: PromiseOrValue<BigNumberish>,
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, string, BigNumber] & {
-        chainSelector: BigNumber;
+  s_chains: TypedContractMethod<
+    [arg0: BigNumberish],
+    [
+      [bigint, string, bigint] & {
+        chainSelector: bigint;
         ccnsReceiverAddress: string;
-        gasLimit: BigNumber;
+        gasLimit: bigint;
       }
-    >;
+    ],
+    "view"
+  >;
 
-    transferOwnership(
-      to: PromiseOrValue<string>,
-      overrides?: CallOverrides
-    ): Promise<void>;
+  transferOwnership: TypedContractMethod<
+    [to: AddressLike],
+    [void],
+    "nonpayable"
+  >;
 
-    withdraw(
-      beneficiary: PromiseOrValue<string>,
-      overrides?: CallOverrides
-    ): Promise<void>;
-  };
+  withdraw: TypedContractMethod<
+    [beneficiary: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  getFunction<T extends ContractMethod = ContractMethod>(
+    key: string | FunctionFragment
+  ): T;
+
+  getFunction(
+    nameOrSignature: "acceptOwnership"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "enableChain"
+  ): TypedContractMethod<
+    [
+      chainSelector: BigNumberish,
+      ccnsReceiverAddress: AddressLike,
+      gasLimit: BigNumberish
+    ],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "i_lookup"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "i_router"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "owner"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "register"
+  ): TypedContractMethod<[_name: string], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "s_chains"
+  ): TypedContractMethod<
+    [arg0: BigNumberish],
+    [
+      [bigint, string, bigint] & {
+        chainSelector: bigint;
+        ccnsReceiverAddress: string;
+        gasLimit: bigint;
+      }
+    ],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "transferOwnership"
+  ): TypedContractMethod<[to: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "withdraw"
+  ): TypedContractMethod<[beneficiary: AddressLike], [void], "nonpayable">;
+
+  getEvent(
+    key: "OwnershipTransferRequested"
+  ): TypedContractEvent<
+    OwnershipTransferRequestedEvent.InputTuple,
+    OwnershipTransferRequestedEvent.OutputTuple,
+    OwnershipTransferRequestedEvent.OutputObject
+  >;
+  getEvent(
+    key: "OwnershipTransferred"
+  ): TypedContractEvent<
+    OwnershipTransferredEvent.InputTuple,
+    OwnershipTransferredEvent.OutputTuple,
+    OwnershipTransferredEvent.OutputObject
+  >;
 
   filters: {
-    "OwnershipTransferRequested(address,address)"(
-      from?: PromiseOrValue<string> | null,
-      to?: PromiseOrValue<string> | null
-    ): OwnershipTransferRequestedEventFilter;
-    OwnershipTransferRequested(
-      from?: PromiseOrValue<string> | null,
-      to?: PromiseOrValue<string> | null
-    ): OwnershipTransferRequestedEventFilter;
+    "OwnershipTransferRequested(address,address)": TypedContractEvent<
+      OwnershipTransferRequestedEvent.InputTuple,
+      OwnershipTransferRequestedEvent.OutputTuple,
+      OwnershipTransferRequestedEvent.OutputObject
+    >;
+    OwnershipTransferRequested: TypedContractEvent<
+      OwnershipTransferRequestedEvent.InputTuple,
+      OwnershipTransferRequestedEvent.OutputTuple,
+      OwnershipTransferRequestedEvent.OutputObject
+    >;
 
-    "OwnershipTransferred(address,address)"(
-      from?: PromiseOrValue<string> | null,
-      to?: PromiseOrValue<string> | null
-    ): OwnershipTransferredEventFilter;
-    OwnershipTransferred(
-      from?: PromiseOrValue<string> | null,
-      to?: PromiseOrValue<string> | null
-    ): OwnershipTransferredEventFilter;
-  };
-
-  estimateGas: {
-    acceptOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
-    enableChain(
-      chainSelector: PromiseOrValue<BigNumberish>,
-      ccnsReceiverAddress: PromiseOrValue<string>,
-      gasLimit: PromiseOrValue<BigNumberish>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
-    i_lookup(overrides?: CallOverrides): Promise<BigNumber>;
-
-    i_router(overrides?: CallOverrides): Promise<BigNumber>;
-
-    owner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    register(
-      _name: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
-    s_chains(
-      arg0: PromiseOrValue<BigNumberish>,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    transferOwnership(
-      to: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
-    withdraw(
-      beneficiary: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-  };
-
-  populateTransaction: {
-    acceptOwnership(
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
-    enableChain(
-      chainSelector: PromiseOrValue<BigNumberish>,
-      ccnsReceiverAddress: PromiseOrValue<string>,
-      gasLimit: PromiseOrValue<BigNumberish>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
-    i_lookup(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    i_router(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    register(
-      _name: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
-    s_chains(
-      arg0: PromiseOrValue<BigNumberish>,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    transferOwnership(
-      to: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
-    withdraw(
-      beneficiary: PromiseOrValue<string>,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
+    "OwnershipTransferred(address,address)": TypedContractEvent<
+      OwnershipTransferredEvent.InputTuple,
+      OwnershipTransferredEvent.OutputTuple,
+      OwnershipTransferredEvent.OutputObject
+    >;
+    OwnershipTransferred: TypedContractEvent<
+      OwnershipTransferredEvent.InputTuple,
+      OwnershipTransferredEvent.OutputTuple,
+      OwnershipTransferredEvent.OutputObject
+    >;
   };
 }

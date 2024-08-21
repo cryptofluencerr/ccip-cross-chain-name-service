@@ -3,73 +3,61 @@
 /* eslint-disable */
 import type {
   BaseContract,
-  BigNumber,
   BigNumberish,
   BytesLike,
-  CallOverrides,
-  ContractTransaction,
-  Overrides,
-  PopulatedTransaction,
-  Signer,
-  utils,
+  FunctionFragment,
+  Result,
+  Interface,
+  AddressLike,
+  ContractRunner,
+  ContractMethod,
+  Listener,
 } from "ethers";
-import type { FunctionFragment, Result } from "@ethersproject/abi";
-import type { Listener, Provider } from "@ethersproject/providers";
 import type {
-  TypedEventFilter,
-  TypedEvent,
+  TypedContractEvent,
+  TypedDeferredTopicFilter,
+  TypedEventLog,
   TypedListener,
-  OnEvent,
-  PromiseOrValue,
+  TypedContractMethod,
 } from "../common";
 
 export declare namespace Client {
   export type EVMTokenAmountStruct = {
-    token: PromiseOrValue<string>;
-    amount: PromiseOrValue<BigNumberish>;
+    token: AddressLike;
+    amount: BigNumberish;
   };
 
-  export type EVMTokenAmountStructOutput = [string, BigNumber] & {
+  export type EVMTokenAmountStructOutput = [token: string, amount: bigint] & {
     token: string;
-    amount: BigNumber;
+    amount: bigint;
   };
 
   export type Any2EVMMessageStruct = {
-    messageId: PromiseOrValue<BytesLike>;
-    sourceChainSelector: PromiseOrValue<BigNumberish>;
-    sender: PromiseOrValue<BytesLike>;
-    data: PromiseOrValue<BytesLike>;
+    messageId: BytesLike;
+    sourceChainSelector: BigNumberish;
+    sender: BytesLike;
+    data: BytesLike;
     destTokenAmounts: Client.EVMTokenAmountStruct[];
   };
 
   export type Any2EVMMessageStructOutput = [
-    string,
-    BigNumber,
-    string,
-    string,
-    Client.EVMTokenAmountStructOutput[]
+    messageId: string,
+    sourceChainSelector: bigint,
+    sender: string,
+    data: string,
+    destTokenAmounts: Client.EVMTokenAmountStructOutput[]
   ] & {
     messageId: string;
-    sourceChainSelector: BigNumber;
+    sourceChainSelector: bigint;
     sender: string;
     data: string;
     destTokenAmounts: Client.EVMTokenAmountStructOutput[];
   };
 }
 
-export interface CrossChainNameServiceReceiverInterface
-  extends utils.Interface {
-  functions: {
-    "ccipReceive((bytes32,uint64,bytes,bytes,(address,uint256)[]))": FunctionFragment;
-    "getRouter()": FunctionFragment;
-    "i_lookup()": FunctionFragment;
-    "i_router()": FunctionFragment;
-    "i_sourceChainSelector()": FunctionFragment;
-    "supportsInterface(bytes4)": FunctionFragment;
-  };
-
+export interface CrossChainNameServiceReceiverInterface extends Interface {
   getFunction(
-    nameOrSignatureOrTopic:
+    nameOrSignature:
       | "ccipReceive"
       | "getRouter"
       | "i_lookup"
@@ -91,7 +79,7 @@ export interface CrossChainNameServiceReceiverInterface
   ): string;
   encodeFunctionData(
     functionFragment: "supportsInterface",
-    values: [PromiseOrValue<BytesLike>]
+    values: [BytesLike]
   ): string;
 
   decodeFunctionResult(
@@ -109,135 +97,97 @@ export interface CrossChainNameServiceReceiverInterface
     functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
-
-  events: {};
 }
 
 export interface CrossChainNameServiceReceiver extends BaseContract {
-  connect(signerOrProvider: Signer | Provider | string): this;
-  attach(addressOrName: string): this;
-  deployed(): Promise<this>;
+  connect(runner?: ContractRunner | null): CrossChainNameServiceReceiver;
+  waitForDeployment(): Promise<this>;
 
   interface: CrossChainNameServiceReceiverInterface;
 
-  queryFilter<TEvent extends TypedEvent>(
-    event: TypedEventFilter<TEvent>,
+  queryFilter<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
     fromBlockOrBlockhash?: string | number | undefined,
     toBlock?: string | number | undefined
-  ): Promise<Array<TEvent>>;
+  ): Promise<Array<TypedEventLog<TCEvent>>>;
+  queryFilter<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    fromBlockOrBlockhash?: string | number | undefined,
+    toBlock?: string | number | undefined
+  ): Promise<Array<TypedEventLog<TCEvent>>>;
 
-  listeners<TEvent extends TypedEvent>(
-    eventFilter?: TypedEventFilter<TEvent>
-  ): Array<TypedListener<TEvent>>;
-  listeners(eventName?: string): Array<Listener>;
-  removeAllListeners<TEvent extends TypedEvent>(
-    eventFilter: TypedEventFilter<TEvent>
-  ): this;
-  removeAllListeners(eventName?: string): this;
-  off: OnEvent<this>;
-  on: OnEvent<this>;
-  once: OnEvent<this>;
-  removeListener: OnEvent<this>;
+  on<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
+  on<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
 
-  functions: {
-    ccipReceive(
-      message: Client.Any2EVMMessageStruct,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<ContractTransaction>;
+  once<TCEvent extends TypedContractEvent>(
+    event: TCEvent,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
+  once<TCEvent extends TypedContractEvent>(
+    filter: TypedDeferredTopicFilter<TCEvent>,
+    listener: TypedListener<TCEvent>
+  ): Promise<this>;
 
-    getRouter(overrides?: CallOverrides): Promise<[string]>;
+  listeners<TCEvent extends TypedContractEvent>(
+    event: TCEvent
+  ): Promise<Array<TypedListener<TCEvent>>>;
+  listeners(eventName?: string): Promise<Array<Listener>>;
+  removeAllListeners<TCEvent extends TypedContractEvent>(
+    event?: TCEvent
+  ): Promise<this>;
 
-    i_lookup(overrides?: CallOverrides): Promise<[string]>;
+  ccipReceive: TypedContractMethod<
+    [message: Client.Any2EVMMessageStruct],
+    [void],
+    "nonpayable"
+  >;
 
-    i_router(overrides?: CallOverrides): Promise<[string]>;
+  getRouter: TypedContractMethod<[], [string], "view">;
 
-    i_sourceChainSelector(overrides?: CallOverrides): Promise<[BigNumber]>;
+  i_lookup: TypedContractMethod<[], [string], "view">;
 
-    supportsInterface(
-      interfaceId: PromiseOrValue<BytesLike>,
-      overrides?: CallOverrides
-    ): Promise<[boolean]>;
-  };
+  i_router: TypedContractMethod<[], [string], "view">;
 
-  ccipReceive(
-    message: Client.Any2EVMMessageStruct,
-    overrides?: Overrides & { from?: PromiseOrValue<string> }
-  ): Promise<ContractTransaction>;
+  i_sourceChainSelector: TypedContractMethod<[], [bigint], "view">;
 
-  getRouter(overrides?: CallOverrides): Promise<string>;
+  supportsInterface: TypedContractMethod<
+    [interfaceId: BytesLike],
+    [boolean],
+    "view"
+  >;
 
-  i_lookup(overrides?: CallOverrides): Promise<string>;
+  getFunction<T extends ContractMethod = ContractMethod>(
+    key: string | FunctionFragment
+  ): T;
 
-  i_router(overrides?: CallOverrides): Promise<string>;
-
-  i_sourceChainSelector(overrides?: CallOverrides): Promise<BigNumber>;
-
-  supportsInterface(
-    interfaceId: PromiseOrValue<BytesLike>,
-    overrides?: CallOverrides
-  ): Promise<boolean>;
-
-  callStatic: {
-    ccipReceive(
-      message: Client.Any2EVMMessageStruct,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    getRouter(overrides?: CallOverrides): Promise<string>;
-
-    i_lookup(overrides?: CallOverrides): Promise<string>;
-
-    i_router(overrides?: CallOverrides): Promise<string>;
-
-    i_sourceChainSelector(overrides?: CallOverrides): Promise<BigNumber>;
-
-    supportsInterface(
-      interfaceId: PromiseOrValue<BytesLike>,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
-  };
+  getFunction(
+    nameOrSignature: "ccipReceive"
+  ): TypedContractMethod<
+    [message: Client.Any2EVMMessageStruct],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "getRouter"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "i_lookup"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "i_router"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "i_sourceChainSelector"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "supportsInterface"
+  ): TypedContractMethod<[interfaceId: BytesLike], [boolean], "view">;
 
   filters: {};
-
-  estimateGas: {
-    ccipReceive(
-      message: Client.Any2EVMMessageStruct,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<BigNumber>;
-
-    getRouter(overrides?: CallOverrides): Promise<BigNumber>;
-
-    i_lookup(overrides?: CallOverrides): Promise<BigNumber>;
-
-    i_router(overrides?: CallOverrides): Promise<BigNumber>;
-
-    i_sourceChainSelector(overrides?: CallOverrides): Promise<BigNumber>;
-
-    supportsInterface(
-      interfaceId: PromiseOrValue<BytesLike>,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-  };
-
-  populateTransaction: {
-    ccipReceive(
-      message: Client.Any2EVMMessageStruct,
-      overrides?: Overrides & { from?: PromiseOrValue<string> }
-    ): Promise<PopulatedTransaction>;
-
-    getRouter(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    i_lookup(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    i_router(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    i_sourceChainSelector(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    supportsInterface(
-      interfaceId: PromiseOrValue<BytesLike>,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-  };
 }
